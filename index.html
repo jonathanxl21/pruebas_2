@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matrix Competency</title>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDGDNZG2IE4H1nfHWmUdrcQBDik4WdNkKA",
+            authDomain: "base-prysmian-matrix.firebaseapp.com",
+            projectId: "base-prysmian-matrix",
+            storageBucket: "base-prysmian-matrix.appspot.com",
+            messagingSenderId: "565663537513",
+            appId: "1:565663537513:web:d7bcd63246301a752705f8",
+            measurementId: "G-0CKQG07JE4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        let isLoggedIn = false;
+
+        window.loginWithGoogle = async function() {
+            try {
+                const result = await signInWithPopup(auth, provider);
+                isLoggedIn = true;
+                document.getElementById("loginButton").style.display = "none";
+                document.getElementById("logoutButton").style.display = "block";
+                document.getElementById("saveButton").style.display = "inline-block";
+                toggleEditableCells(true);  // Hacer la tabla editable al iniciar sesión
+            } catch (error) {
+                console.error("Error durante el inicio de sesión:", error);
+            }
+        };
+
+        window.logout = function() {
+            signOut(auth).then(() => {
+                isLoggedIn = false;
+                document.getElementById("loginButton").style.display = "block";
+                document.getElementById("logoutButton").style.display = "none";
+                document.getElementById("saveButton").style.display = "none";
+                toggleEditableCells(false);  // Bloquear la tabla cuando se cierra sesión
+            }).catch((error) => {
+                console.error("Error durante la salida:", error);
+            });
+        };
+
+        window.saveChanges = function() {
+            alert("Cambios guardados (simulado).");
+        };
+
+        function toggleEditableCells(editable) {
+            document.querySelectorAll('#editableTable td').forEach(td => {
+                td.contentEditable = editable;
+                if (editable) {
+                    td.classList.add('editable');
+                } else {
+                    td.classList.remove('editable');
+                }
+            });
+        }
+
+        function applyCellColor() {
+            document.querySelectorAll('#editableTable td').forEach(td => {
+                const value = td.textContent.trim();
+                if (value === "1") {
+                    td.style.backgroundColor = "red";
+                } else if (value === "2") {
+                    td.style.backgroundColor = "yellow";
+                } else if (value === "3") {
+                    td.style.backgroundColor = "orange";
+                } else if (value === "4") {
+                    td.style.backgroundColor = "green";
+                } else {
+                    td.style.backgroundColor = ""; // Default if no value
+                }
+            });
+        }
+
+        function updatePercentages() {
+            let totalCurrent = 0, totalTarget = 0, currentCount = 0, targetCount = 0;
+
+            // Recorrer todas las filas de tareas
+            document.querySelectorAll('#editableTable tr').forEach(row => {
+                const currentCells = row.querySelectorAll('.current');
+                const targetCells = row.querySelectorAll('.target');
+
+                currentCells.forEach(cell => {
+                    const value = parseInt(cell.textContent.trim());
+                    if (!isNaN(value)) {
+                        totalCurrent += value;
+                        currentCount++;
+                    }
+                });
+
+                targetCells.forEach(cell => {
+                    const value = parseInt(cell.textContent.trim());
+                    if (!isNaN(value)) {
+                        totalTarget += value;
+                        targetCount++;
+                    }
+                });
+            });
+            function updateRowPercentages() {
+                document.querySelectorAll('#editableTable tr').forEach(row => {
+                    const currentCells = row.querySelectorAll('.current');
+                    const targetCells = row.querySelectorAll('.target');
+            
+                    let totalCurrent = 0, totalTarget = 0, count = 0;
+            
+                    // Suma todos los valores de Current y Target en la fila
+                    currentCells.forEach(cell => {
+                        const value = parseFloat(cell.textContent.trim());
+                        if (!isNaN(value)) {
+                            totalCurrent += value;
+                            count++;
+                        }
+                    });
+            
+                    targetCells.forEach(cell => {
+                        const value = parseFloat(cell.textContent.trim());
+                        if (!isNaN(value)) {
+                            totalTarget += value;
+                        }
+                    });
+            
+                    // Calcula los porcentajes y actualiza las celdas al final de la fila
+                    const currentPercentageCell = row.querySelector('.current-percentage');
+                    const targetPercentageCell = row.querySelector('.target-percentage');
+            
+                    if (currentPercentageCell && targetPercentageCell && count > 0) {
+                        currentPercentageCell.textContent = `${((totalCurrent / (count * 4)) * 100).toFixed(2)}%`;
+                        targetPercentageCell.textContent = `${((totalTarget / (count * 4)) * 100).toFixed(2)}%`;
+                    }
+                });
+            }
+            
+            // Actualiza colores y porcentajes cada vez que cambie el contenido
+            document.addEventListener("input", () => {
+                applyCellColor();
+                updateRowPercentages();
+            });
+            
+
+            // Calcular el porcentaje total
+            const percentageCurrent = (totalCurrent / (currentCount * 4)) * 100;
+            const percentageTarget = (totalTarget / (targetCount * 4)) * 100;
+
+            // Actualizar los porcentajes en las celdas correspondientes (última fila de la tabla)
+            const currentPercentageCell = document.querySelector('.currentPercentage');
+            const targetPercentageCell = document.querySelector('.targetPercentage');
+            
+            currentPercentageCell.textContent = `${percentageCurrent.toFixed(2)}%`;
+            targetPercentageCell.textContent = `${percentageTarget.toFixed(2)}%`;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            toggleEditableCells(false);  // Asegurarse de que la tabla no sea editable inicialmente
+            applyCellColor();  // Aplicar colores a las celdas
+            updatePercentages();  // Actualizar los porcentajes al cargar la página
+
+            // Agregar un evento de entrada para cada celda editable
+            document.querySelectorAll('.current, .target').forEach(cell => {
+                cell.addEventListener('input', () => {
+                    applyCellColor();  // Aplicar color a las celdas
+                    updatePercentages();  // Actualizar los porcentajes
+                });
+            });
+        });
+
+    </script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            background-color: #2D354A;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 100;
+        }
+
+        /* Logo encima de la navbar */
+        .logo-container {
+            position: absolute;
+            top: 5px;  /* Ajusta la posición del logo */
+            left: 40%;
+            transform: translateX(-0%);
+            z-index: 200;  /* Asegura que el logo esté por encima de la navbar */
+        }
+
+        .logo-container {
+            position: absolute;
+            top: 10px;  /* Mantén la posición del logo desde la parte superior */
+            left: 10px; /* Cambia el valor para alinear el logo a la izquierda */
+            z-index: 200;  /* Asegura que el logo esté por encima de la navbar */
+        }
+
+        .image-container {
+            text-align: left;
+            margin-top: 100px; /* Espacio debajo de la navbar para la imagen */
+        }
+
+        .image-container img {
+            max-width: 100%; /* Imagen que ocupe todo el ancho disponible */
+            height: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 40px; /* Espacio adicional debajo de la imagen */
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .buttons {
+            margin: 20px;
+            text-align: center;
+        }
+
+        td.editable {
+            background-color: #e7f3ff;
+        }
+
+        /* Colores de las celdas */
+        td {
+            transition: background-color 0.3s ease;
+        }
+
+        .percentage {
+            font-weight: bold;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1>Matrix Competency</h1>
+        <button id="loginButton" onclick="loginWithGoogle()">Iniciar Sesión con Google</button>
+        <button id="logoutButton" onclick="logout()" style="display:none;">Cerrar Sesión</button>
+    </div>
+
+    <!-- Logo encima de la barra de navegación -->
+    <div class="logo-container">
+        <img src="logo.png" alt="Logo"> <!-- Aquí puedes poner tu logo -->
+    </div>
+
+    <div class="image-container">
+        <img src="image.png" alt="Imagen sobre la tabla"> <!-- Aquí puedes poner la imagen -->
+    </div>
+
+    <div class="buttons">
+        <button id="saveButton" onclick="saveChanges()" style="display:none;">Guardar Cambios</button>
+    </div>
+
+    <table id="editableTable">
+        <tr>
+            <th rowspan="2">Nombre del Trabajador</th>
+            <th rowspan="2">Máquina</th>
+            <th colspan="2">Tarea 1</th>
+            <th colspan="2">Tarea 2</th>
+            <th colspan="2">Tarea 3</th>
+            <th colspan="2">Tarea 4</th>
+            <th colspan="2">Tarea 5</th>
+            <th colspan="2">Tarea 6</th>
+            <th colspan="2">Tarea 7</th>
+            <th colspan="2">Tarea 8</th>
+            <th colspan="2">Tarea 9</th>
+            <th colspan="2">Tarea 10</th>
+            <th colspan="2">Tarea 11</th>
+            <th colspan="2">Tarea 12</th>
+            <th colspan="2">Tarea 13</th>
+            <th colspan="2">Tarea 14</th>
+            <th colspan="2">Tarea 15</th>
+            <th colspan="2">Tarea 16</th>
+            <th colspan="2">Tarea 17</th>
+            <th colspan="2">Tarea 18</th>
+            <th colspan="2">Tarea 19</th>
+            <th colspan="2">PROCENTAJES</th>
+        </tr>
+        <tr>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>Current</th>
+            <th>Target</th>
+            <th>%CUR</th>
+            <th>%TAR</th>
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        <tr>
+            <td>Juan Pérez</td>
+            <td>Máquina A</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">4</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">1</td>
+            <td class="editable current">3</td>
+            <td class="editable target">4</td>
+            <td class="editable current">2</td>
+            <td class="editable target">3</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">3</td>
+            <td class="editable target">3</td>
+            <td class="editable current">2</td>
+            <td class="editable target">4</td>
+            <td class="editable current">1</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">1</td>
+            <td class="editable current">4</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="editable current">3</td>
+            <td class="editable target">2</td>
+            <td class="percentage currentPercentage">70%</td>
+            <td class="percentage targetPercentage">60%</td>
+           
+        </tr>
+        
+    </table>
+</body>
+</html>
